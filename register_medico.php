@@ -20,6 +20,8 @@ if (empty($payload['nit_cntbldad'])) {
 
 $id_institucion = $payload['nit_cntbldad'];
 
+$database = new Database();
+$db = $database->getConnection();
 $medicoModel = new Medico($db);
 
 $data = json_decode(file_get_contents("php://input"));

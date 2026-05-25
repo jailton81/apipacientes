@@ -71,9 +71,9 @@ class Medico
         } else {
             // No existe, lo insertamos
             $insert_mdcos_sql = "INSERT INTO mdcos (
-                                    idntfccion_mdcos, tpo_idntfccion, nmbres, espcldad, estdo, email, password
+                                    idntfccion_mdcos, tpo_idntfccion, nmbres, espcldad, estdo, email, password, pwd_changed
                                  ) VALUES (
-                                    :id, :tpo, :nmbres, :espcldad, :estdo, :email, :password
+                                    :id, :tpo, :nmbres, :espcldad, :estdo, :email, :password, 0
                                  )";
             $insert_stid = oci_parse($this->conn, $insert_mdcos_sql);
             oci_bind_by_name($insert_stid, ":id", $idntfccion);
@@ -113,6 +113,69 @@ class Medico
             $e = oci_error($rel_stid);
             return ["status" => "error", "message" => "Error al vincular el médico con la institución: " . $e['message']];
         }
+    }
+
+    public function changePassword($idntfccion, $old_password, $new_password) {
+        $sql = "SELECT password FROM mdcos WHERE idntfccion_mdcos = :id";
+        $stid = oci_parse($this->conn, $sql);
+        oci_bind_by_name($stid, ":id", $idntfccion);
+        oci_execute($stid);
+
+        $row = oci_fetch_array($stid, OCI_ASSOC);
+        
+        if (!$row) {
+            return ["status" => "error", "message" => "Médico no encontrado."];
+        }
+
+        if (password_verify($old_password, $row['PASSWORD'])) {
+            $new_password_hash = password_hash($new_password, PASSWORD_BCRYPT);
+            
+            $update_sql = "UPDATE mdcos SET password = :password, pwd_changed = 1 WHERE idntfccion_mdcos = :id";
+            $update_stid = oci_parse($this->conn, $update_sql);
+            oci_bind_by_name($update_stid, ":password", $new_password_hash);
+            oci_bind_by_name($update_stid, ":id", $idntfccion);
+            
+            if (oci_execute($update_stid)) {
+                return ["status" => "success", "message" => "Contraseña del médico actualizada correctamente."];
+            } else {
+                $e = oci_error($update_stid);
+                return ["status" => "error", "message" => "Error al actualizar la contraseña: " . $e['message']];
+            }
+        } else {
+            return ["status" => "error", "message" => "La contraseña actual es incorrecta."];
+        }
+    }
+
+    public function loginMedico($idntfccion, $password) {
+        $sql = "SELECT idntfccion_mdcos, nmbres, email, password, pwd_changed FROM mdcos WHERE idntfccion_mdcos = :id AND estdo = 'A'";
+        $stid = oci_parse($this->conn, $sql);
+        oci_bind_by_name($stid, ":id", $idntfccion);
+        oci_execute($stid);
+
+        $row = oci_fetch_array($stid, OCI_ASSOC);
+        
+        if ($row && password_verify($password, $row['PASSWORD'])) {
+            $require_change = (!isset($row['PWD_CHANGED']) || $row['PWD_CHANGED'] == 0);
+            
+            if ($require_change) {
+                return [
+                    "status" => "error",
+                    "message" => "Acceso denegado: Debe cambiar la contraseña asignada por defecto antes de poder iniciar sesión."
+                ];
+            }
+
+            return [
+                "status" => "success",
+                "require_password_change" => false,
+                "user" => [
+                    "id" => $row['IDNTFCCION_MDCOS'],
+                    "name" => $row['NMBRES'],
+                    "email" => $row['EMAIL']
+                ]
+            ];
+        }
+
+        return ["status" => "error", "message" => "Identificación o contraseña incorrectos."];
     }
 }
 ?>
