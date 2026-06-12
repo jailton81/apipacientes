@@ -7,30 +7,61 @@ class Auth {
         $this->conn = $db;
     }
 
-    public function register($name, $email, $password) {
-        // Verificar si el email ya existe
-        $check_sql = "SELECT id FROM " . $this->table_name . " WHERE email = :email";
+    public function preRegister($email, $password, $nit_insttcion) {
+        $nit_parts = explode('-', $nit_insttcion);
+        $nit_cntbldad = $nit_parts[0];
+        
+        $dscrpcion = 'N/A';
+        $entdad = '000000';
+        $cdgo_prstdor = '000000000000';
+        $drccion = 'N/A';
+        $tlfno = '0000000';
+        $fax = '0000000';
+        $nmro_lccia = 'N/A';
+        $usrio_ingso = 'PRE_API';
+
+        // Check if exists
+        $check_sql = "SELECT nit_insttcion FROM insttciones WHERE email = :email OR nit_insttcion = :nit";
         $check_stid = oci_parse($this->conn, $check_sql);
         oci_bind_by_name($check_stid, ":email", $email);
+        oci_bind_by_name($check_stid, ":nit", $nit_insttcion);
         oci_execute($check_stid);
         
         if (oci_fetch_array($check_stid, OCI_ASSOC)) {
-            return ["status" => "error", "message" => "El email ya se encuentra registrado."];
+            return ["status" => "error", "message" => "El email o el NIT ya se encuentran registrados."];
         }
 
         $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-        $sql = "INSERT INTO " . $this->table_name . " (name, email, password) VALUES (:name, :email, :password)";
+        
+        $sql = "INSERT INTO insttciones (
+                    nit_insttcion, dscrpcion, entdad_admnstrdra, cdgo_prstdor_srvcio, drccion, 
+                    tlfno, fax, nmro_lccia, usrio_ingso, fcha_ingrso, 
+                    email, password, nit_cntbldad
+                ) VALUES (
+                    :nit_insttcion, :dscrpcion, :entdad, :cdgo_prstdor, :drccion, 
+                    :tlfno, :fax, :nmro_lccia, :usrio_ingso, SYSDATE, 
+                    :email, :password, :nit_cntbldad
+                )";
         
         $stid = oci_parse($this->conn, $sql);
-        oci_bind_by_name($stid, ":name", $name);
+        oci_bind_by_name($stid, ":nit_insttcion", $nit_insttcion);
+        oci_bind_by_name($stid, ":dscrpcion", $dscrpcion);
+        oci_bind_by_name($stid, ":entdad", $entdad);
+        oci_bind_by_name($stid, ":cdgo_prstdor", $cdgo_prstdor);
+        oci_bind_by_name($stid, ":drccion", $drccion);
+        oci_bind_by_name($stid, ":tlfno", $tlfno);
+        oci_bind_by_name($stid, ":fax", $fax);
+        oci_bind_by_name($stid, ":nmro_lccia", $nmro_lccia);
+        oci_bind_by_name($stid, ":usrio_ingso", $usrio_ingso);
         oci_bind_by_name($stid, ":email", $email);
         oci_bind_by_name($stid, ":password", $hashed_password);
+        oci_bind_by_name($stid, ":nit_cntbldad", $nit_cntbldad);
 
         if (oci_execute($stid)) {
-            return ["status" => "success", "message" => "Usuario registrado satisfactoriamente."];
+            return ["status" => "success", "message" => "Pre-registro de institución realizado satisfactoriamente."];
         } else {
             $e = oci_error($stid);
-            return ["status" => "error", "message" => "Error al registrar usuario: " . $e['message']];
+            return ["status" => "error", "message" => "Error al pre-registrar: " . $e['message']];
         }
     }
 
@@ -93,14 +124,42 @@ class Auth {
         $usrio_ingso = 'API';
 
         // Check if exists
-        $check_sql = "SELECT nit_insttcion FROM insttciones WHERE email = :email OR nit_insttcion = :nit";
+        $check_sql = "SELECT nit_insttcion FROM insttciones WHERE nit_insttcion = :nit";
         $check_stid = oci_parse($this->conn, $check_sql);
-        oci_bind_by_name($check_stid, ":email", $email);
         oci_bind_by_name($check_stid, ":nit", $nit_insttcion);
         oci_execute($check_stid);
         
         if (oci_fetch_array($check_stid, OCI_ASSOC)) {
-            return ["status" => "error", "message" => "El email o el NIT ya se encuentran registrados."];
+            // Si ya existe (pre-registrada), actualizamos sus campos opcionales / de perfil
+            $sql = "UPDATE insttciones SET 
+                        dscrpcion = :dscrpcion,
+                        entdad_admnstrdra = :entdad,
+                        cdgo_prstdor_srvcio = :cdgo_prstdor,
+                        drccion = :drccion,
+                        tlfno = :tlfno,
+                        fax = :fax,
+                        nmro_lccia = :nmro_lccia,
+                        usrio_ingso = :usrio_ingso,
+                        fcha_ingrso = SYSDATE
+                    WHERE nit_insttcion = :nit_insttcion";
+            
+            $stid = oci_parse($this->conn, $sql);
+            oci_bind_by_name($stid, ":dscrpcion", $dscrpcion);
+            oci_bind_by_name($stid, ":entdad", $entdad);
+            oci_bind_by_name($stid, ":cdgo_prstdor", $cdgo_prstdor);
+            oci_bind_by_name($stid, ":drccion", $drccion);
+            oci_bind_by_name($stid, ":tlfno", $tlfno);
+            oci_bind_by_name($stid, ":fax", $fax);
+            oci_bind_by_name($stid, ":nmro_lccia", $nmro_lccia);
+            oci_bind_by_name($stid, ":usrio_ingso", $usrio_ingso);
+            oci_bind_by_name($stid, ":nit_insttcion", $nit_insttcion);
+
+            if (oci_execute($stid)) {
+                return ["status" => "success", "message" => "Datos de la institución actualizados satisfactoriamente."];
+            } else {
+                $e = oci_error($stid);
+                return ["status" => "error", "message" => "Error al actualizar la institución: " . $e['message']];
+            }
         }
 
         $hashed_password = password_hash($password, PASSWORD_BCRYPT);
@@ -260,6 +319,43 @@ class Auth {
             $e = oci_error($update_stid);
             return ["status" => "error", "message" => "Error al actualizar los datos del software: " . $e['message']];
         }
+    }
+
+    public function getInstitucionByEmail($email) {
+        $sql = "SELECT nit_insttcion, dscrpcion, entdad_admnstrdra, cdgo_prstdor_srvcio, drccion, 
+                       tlfno, fax, nmro_lccia, usrio_ingso, fcha_ingrso, 
+                       email, nit_cntbldad, client_id, scope, subscription_key 
+                FROM insttciones 
+                WHERE email = :email";
+        $stid = oci_parse($this->conn, $sql);
+        oci_bind_by_name($stid, ":email", $email);
+        oci_execute($stid);
+
+        $row = oci_fetch_array($stid, OCI_ASSOC);
+        if ($row) {
+            return [
+                "status" => "success",
+                "data" => [
+                    "nit_insttcion" => $row['NIT_INSTTCION'],
+                    "dscrpcion" => $row['DSCRPCION'],
+                    "entdad_admnstrdra" => $row['ENTDAD_ADMNSTRDRA'],
+                    "cdgo_prstdor_srvcio" => $row['CDGO_PRSTDOR_SRVCIO'],
+                    "drccion" => $row['DRCCION'],
+                    "tlfno" => $row['TLFNO'],
+                    "fax" => $row['FAX'],
+                    "nmro_lccia" => $row['NMRO_LCCIA'],
+                    "usrio_ingso" => $row['USRIO_INGSO'],
+                    "fcha_ingrso" => $row['FCHA_INGRSO'],
+                    "email" => $row['EMAIL'],
+                    "nit_cntbldad" => $row['NIT_CNTBLDAD'],
+                    "client_id" => isset($row['CLIENT_ID']) ? $row['CLIENT_ID'] : null,
+                    "scope" => isset($row['SCOPE']) ? $row['SCOPE'] : null,
+                    "subscription_key" => isset($row['SUBSCRIPTION_KEY']) ? $row['SUBSCRIPTION_KEY'] : null
+                ]
+            ];
+        }
+
+        return ["status" => "error", "message" => "No se encontró ninguna institución con el correo proporcionado."];
     }
 }
 ?>

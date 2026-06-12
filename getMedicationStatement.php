@@ -3,9 +3,13 @@
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Method: GET");
 
-// 2. Incluir los archivos de clases requeridos
+// 2. Incluir los archivos de clases requeridos y middleware
 require_once __DIR__ . '/config/Database.php';
 require_once __DIR__ . '/models/MedicationStatement.php';
+require_once __DIR__ . '/utils/AuthMiddleware.php';
+
+// Validar token de seguridad JWT
+AuthMiddleware::checkToken();
 
 // 3. Instanciar la base de datos y obtener su conexión
 $database = new Database();

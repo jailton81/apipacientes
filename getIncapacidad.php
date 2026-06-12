@@ -1,11 +1,11 @@
 <?php
 // 1. Configurar cabeceras para retornar JSON y manejo de caracteres
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Method: GET");
+header("Access-Control-Allow-Methods: GET");
 
 // 2. Incluir los archivos de clases requeridos y middleware
 require_once __DIR__ . '/config/Database.php';
-require_once __DIR__ . '/models/Condition.php';
+require_once __DIR__ . '/models/IncapacidadesHC.php';
 require_once __DIR__ . '/utils/AuthMiddleware.php';
 
 // Validar token de seguridad JWT
@@ -17,22 +17,23 @@ $db = $database->getConnection();
 
 // 4. Leer parámetros de la petición GET
 $idPcnte = isset($_GET['id_pcnte']) ? $_GET['id_pcnte'] : null;
+$cnsctvoPcnte = isset($_GET['cnsctvo_pcnte']) ? $_GET['cnsctvo_pcnte'] : null;
 
-if (!$idPcnte) {
+if (!$idPcnte || !$cnsctvoPcnte) {
     echo json_encode([
         "status" => "error",
-        "message" => "Ocurrió un error. Se requiere el parámetro 'id_pcnte' en la URL."
-    ]);
+        "message" => "Ocurrió un error. Se requieren los parámetros 'id_pcnte' y 'cnsctvo_pcnte' en la URL."
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     $database->closeConnection();
     exit;
 }
 
-// 5. Instanciar el objeto Condition e invocar su método
-$condition = new Condition($db);
-$resultado = $condition->GetInfoCondition($idPcnte);
+// 5. Instanciar el objeto IncapacidadesHC e invocar su método
+$incapacidadesHC = new IncapacidadesHC($db);
+$resultado = $incapacidadesHC->GetInfoIncapacidad($idPcnte, $cnsctvoPcnte);
 
 // 6. Retornar el JSON con los resultados
-echo json_encode($resultado, JSON_PRETTY_PRINT);
+echo json_encode($resultado, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
 // 7. Cerrar la conexión
 $database->closeConnection();

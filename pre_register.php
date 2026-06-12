@@ -12,8 +12,8 @@ $auth = new Auth($db);
 
 $data = json_decode(file_get_contents("php://input"));
 
-if (!empty($data->name) && !empty($data->email) && !empty($data->password)) {
-    $result = $auth->register($data->name, $data->email, $data->password);
+if (!empty($data->email) && !empty($data->password) && !empty($data->nit_insttcion)) {
+    $result = $auth->preRegister($data->email, $data->password, $data->nit_insttcion);
     
     if ($result['status'] == 'success') {
         http_response_code(201);
@@ -23,7 +23,7 @@ if (!empty($data->name) && !empty($data->email) && !empty($data->password)) {
     echo json_encode($result);
 } else {
     http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "Datos incompletos para el registro."]);
+    echo json_encode(["status" => "error", "message" => "Datos incompletos para el pre-registro."]);
 }
 
 $database->closeConnection();
