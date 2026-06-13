@@ -22,6 +22,8 @@ class DiagnosticosHC
                     d.ESTADO,   
                     d.ESTADO_VERIFICACION,   
                     d.OBSERVACIONES,   
+                    d.INDICADOR_DIAGNOSTICO,
+                    d.TIPO_DIAGNOSTICO,
                     TO_CHAR(d.FECHA_INGRESO, \'YYYY-MM-DD HH24:MI:SS\') AS FECHA_INGRESO,   
                     d.USUARIO_INGRESO  
                 FROM "DIAGNOSTICOS_HC" d  
@@ -53,6 +55,8 @@ class DiagnosticosHC
                 "estado" => $row['ESTADO'],
                 "estado_verificacion" => $row['ESTADO_VERIFICACION'],
                 "observaciones" => $row['OBSERVACIONES'],
+                "indicador_diagnostico" => $row['INDICADOR_DIAGNOSTICO'],
+                "tipo_diagnostico" => $row['TIPO_DIAGNOSTICO'],
                 "fecha_ingreso" => $row['FECHA_INGRESO'],
                 "usuario_ingreso" => $row['USUARIO_INGRESO']
             ];
@@ -79,6 +83,8 @@ class DiagnosticosHC
                     d.ESTADO,   
                     d.ESTADO_VERIFICACION,   
                     d.OBSERVACIONES,   
+                    d.INDICADOR_DIAGNOSTICO,
+                    d.TIPO_DIAGNOSTICO,
                     TO_CHAR(d.FECHA_INGRESO, \'YYYY-MM-DD HH24:MI:SS\') AS FECHA_INGRESO,   
                     d.USUARIO_INGRESO  
                 FROM "DIAGNOSTICOS_HC" d  
@@ -108,6 +114,8 @@ class DiagnosticosHC
                 "estado" => $row['ESTADO'],
                 "estado_verificacion" => $row['ESTADO_VERIFICACION'],
                 "observaciones" => $row['OBSERVACIONES'],
+                "indicador_diagnostico" => $row['INDICADOR_DIAGNOSTICO'],
+                "tipo_diagnostico" => $row['TIPO_DIAGNOSTICO'],
                 "fecha_ingreso" => $row['FECHA_INGRESO'],
                 "usuario_ingreso" => $row['USUARIO_INGRESO']
             ];
@@ -143,10 +151,12 @@ class DiagnosticosHC
         $sql = 'INSERT INTO "DIAGNOSTICOS_HC" (
                     "ID_PCNTE", "CNSCTVO_PCNTE", "FHIR_ID", "CODIGO", "CIE_10", "CIE_11",
                     "DESCRIPCION", "ESTADO", "ESTADO_VERIFICACION", "OBSERVACIONES",
+                    "INDICADOR_DIAGNOSTICO", "TIPO_DIAGNOSTICO",
                     "FECHA_INGRESO", "USUARIO_INGRESO"
                 ) VALUES (
                     :id_pcnte, :cnsctvo_pcnte, :fhir_id, :codigo, :cie_10, :cie_11,
                     :descripcion, :estado, :estado_verificacion, :observaciones,
+                    :indicador_diagnostico, :tipo_diagnostico,
                     SYSDATE, :usuario_ingreso
                 )';
 
@@ -159,6 +169,8 @@ class DiagnosticosHC
         $estado = !empty($data->estado) ? $data->estado : 'active';
         $estado_verificacion = !empty($data->estado_verificacion) ? $data->estado_verificacion : 'confirmed';
         $observaciones = !empty($data->observaciones) ? $data->observaciones : null;
+        $indicador_diagnostico = !empty($data->indicador_diagnostico) ? $data->indicador_diagnostico : null;
+        $tipo_diagnostico = !empty($data->tipo_diagnostico) ? $data->tipo_diagnostico : null;
         $usuario_ingreso = !empty($data->usuario_ingreso) ? $data->usuario_ingreso : 'API';
 
         oci_bind_by_name($stid, ":id_pcnte", $id_pcnte);
@@ -171,6 +183,8 @@ class DiagnosticosHC
         oci_bind_by_name($stid, ":estado", $estado);
         oci_bind_by_name($stid, ":estado_verificacion", $estado_verificacion);
         oci_bind_by_name($stid, ":observaciones", $observaciones);
+        oci_bind_by_name($stid, ":indicador_diagnostico", $indicador_diagnostico);
+        oci_bind_by_name($stid, ":tipo_diagnostico", $tipo_diagnostico);
         oci_bind_by_name($stid, ":usuario_ingreso", $usuario_ingreso);
 
         if (oci_execute($stid)) {
@@ -231,6 +245,14 @@ class DiagnosticosHC
         if (isset($data->observaciones)) {
             $fields_to_update[] = '"OBSERVACIONES" = :observaciones';
             $params[":observaciones"] = $data->observaciones;
+        }
+        if (isset($data->indicador_diagnostico)) {
+            $fields_to_update[] = '"INDICADOR_DIAGNOSTICO" = :indicador_diagnostico';
+            $params[":indicador_diagnostico"] = $data->indicador_diagnostico;
+        }
+        if (isset($data->tipo_diagnostico)) {
+            $fields_to_update[] = '"TIPO_DIAGNOSTICO" = :tipo_diagnostico';
+            $params[":tipo_diagnostico"] = $data->tipo_diagnostico;
         }
 
         if (empty($fields_to_update)) {

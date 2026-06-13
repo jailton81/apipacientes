@@ -127,20 +127,96 @@ class HistoriasClinicas
             oci_free_statement($stid_cns);
         }
 
+        $id_mdco = !empty($data->id_mdco) ? $data->id_mdco : null;
+
+        // Resolver NIT_INSTTCION si viene vacío
+        $nit_insttcion = !empty($data->nit_insttcion) ? $data->nit_insttcion : (!empty($data->nit_institucion) ? $data->nit_institucion : null);
+
+        if (empty($nit_insttcion)) {
+            // Intento 1: Buscar citas activas de este paciente y médico en ORDNES_SRVCIOS
+            if (!empty($id_pcnte) && !empty($id_mdco)) {
+                $sql_c = 'SELECT "NIT_INSTTCION" FROM "ORDNES_SRVCIOS" 
+                          WHERE "IDNTFCCION" = :id_pcnte AND "ID_MDCO" = :id_mdco AND "NIT_INSTTCION" IS NOT NULL AND ROWNUM = 1 
+                          ORDER BY "FCHA_ATNCION" DESC';
+                $stid_c = oci_parse($this->conn, $sql_c);
+                oci_bind_by_name($stid_c, ":id_pcnte", $id_pcnte);
+                oci_bind_by_name($stid_c, ":id_mdco", $id_mdco);
+                if (oci_execute($stid_c)) {
+                    $row_c = oci_fetch_array($stid_c, OCI_ASSOC);
+                    if ($row_c && !empty($row_c['NIT_INSTTCION'])) {
+                        $nit_insttcion = $row_c['NIT_INSTTCION'];
+                    }
+                }
+                oci_free_statement($stid_c);
+            }
+        }
+
+        if (empty($nit_insttcion)) {
+            // Intento 2: Buscar cualquier cita de este paciente
+            if (!empty($id_pcnte)) {
+                $sql_c2 = 'SELECT "NIT_INSTTCION" FROM "ORDNES_SRVCIOS" 
+                           WHERE "IDNTFCCION" = :id_pcnte AND "NIT_INSTTCION" IS NOT NULL AND ROWNUM = 1 
+                           ORDER BY "FCHA_ATNCION" DESC';
+                $stid_c2 = oci_parse($this->conn, $sql_c2);
+                oci_bind_by_name($stid_c2, ":id_pcnte", $id_pcnte);
+                if (oci_execute($stid_c2)) {
+                    $row_c2 = oci_fetch_array($stid_c2, OCI_ASSOC);
+                    if ($row_c2 && !empty($row_c2['NIT_INSTTCION'])) {
+                        $nit_insttcion = $row_c2['NIT_INSTTCION'];
+                    }
+                }
+                oci_free_statement($stid_c2);
+            }
+        }
+
+        if (empty($nit_insttcion)) {
+            // Intento 3: Obtener la institución asociada al médico en la tabla intermedia
+            if (!empty($id_mdco)) {
+                $sql_inst = 'SELECT i.NIT_INSTTCION 
+                             FROM "INSTITUCION_MEDICO" im
+                             INNER JOIN "INSTTCIONES" i ON im.ID_INSTITUCION = i.NIT_CNTBLDAD
+                             WHERE im.ID_MEDICO = :id_mdco AND ROWNUM = 1';
+                $stid_inst = oci_parse($this->conn, $sql_inst);
+                oci_bind_by_name($stid_inst, ":id_mdco", $id_mdco);
+                if (oci_execute($stid_inst)) {
+                    $row_inst = oci_fetch_array($stid_inst, OCI_ASSOC);
+                    if ($row_inst && !empty($row_inst['NIT_INSTTCION'])) {
+                        $nit_insttcion = $row_inst['NIT_INSTTCION'];
+                    }
+                }
+                oci_free_statement($stid_inst);
+            }
+        }
+
+        if (empty($nit_insttcion)) {
+            // Intento 4: Tomar la primera institución disponible en la base de datos
+            $sql_fb = 'SELECT NIT_INSTTCION FROM "INSTTCIONES" WHERE ROWNUM = 1';
+            $stid_fb = oci_parse($this->conn, $sql_fb);
+            if (oci_execute($stid_fb)) {
+                $row_fb = oci_fetch_array($stid_fb, OCI_ASSOC);
+                if ($row_fb) {
+                    $nit_insttcion = $row_fb['NIT_INSTTCION'];
+                }
+            }
+            oci_free_statement($stid_fb);
+        }
+
         $sql = 'INSERT INTO "HISTORIAS_CLINICAS" (
                     "ID_PCNTE", "CNSCTVO_PCNTE", "TPO_ID", "FCHA_APRTRA", "MTVO", "EVLCION",
                     "EMPRSA", "NMRO_ORDEN", "ID_MDCO", "TPO_ID_MDCO", "OBSRVCIONES",
                     "DGNSTCO_DFNTVO", "FCHA_INGRSO", "USRIO_INGRSO",
                     "PSO", "TLLA", "INDCE_MSA_CRPRAL", "TMPRTRA", "PRSION_ARTRIAL",
                     "FRCNCIA_CRDCA", "FRCNCIA_RSPRTRIA", "PLSO",
-                    "ENFRMDAD", "ESTDO_GNRAL", "PLAN", "PLAN_TRPTCO", "LBRTRIOS", "ANLSIS"
+                    "ENFRMDAD", "ESTDO_GNRAL", "PLAN", "PLAN_TRPTCO", "LBRTRIOS", "ANLSIS",
+                    "NIT_INSTTCION"
                 ) VALUES (
                     :id_pcnte, :cnsctvo_pcnte, :tpo_id, SYSDATE, :mtvo, :evlcion,
                     :emprsa, :nmro_orden, :id_mdco, :tpo_id_mdco, :observaciones,
                     :diagnostico_definitivo, SYSDATE, :usuario_ingreso,
                     :pso, :tlla, :indce_msa_crpral, :tmprtra, :prsion_artrial,
                     :frcncia_crdca, :frcncia_rsprtria, :plso,
-                    :enfrmdad, :estdo_gnral, :plan, :plan_trptco, :lbrtrios, :anlsis
+                    :enfrmdad, :estdo_gnral, :plan, :plan_trptco, :lbrtrios, :anlsis,
+                    :nit_insttcion
                 )';
 
         $stid = oci_parse($this->conn, $sql);
@@ -149,7 +225,6 @@ class HistoriasClinicas
         $evlcion = !empty($data->evlcion) ? $data->evlcion : null;
         $emprsa = !empty($data->emprsa) ? $data->emprsa : null;
         $nmro_orden = !empty($data->nmro_orden) ? $data->nmro_orden : null;
-        $id_mdco = !empty($data->id_mdco) ? $data->id_mdco : null;
         $tpo_id_mdco = !empty($data->tpo_id_mdco) ? $data->tpo_id_mdco : null;
         $observaciones = !empty($data->obsrvciones) ? $data->obsrvciones : (!empty($data->observaciones) ? $data->observaciones : null);
         $diagnostico_definitivo = !empty($data->dgnstco_dfntvo) ? $data->dgnstco_dfntvo : (!empty($data->diagnostico_definitivo) ? $data->diagnostico_definitivo : null);
@@ -199,6 +274,7 @@ class HistoriasClinicas
         oci_bind_by_name($stid, ":plan_trptco", $plan_trptco);
         oci_bind_by_name($stid, ":lbrtrios", $lbrtrios);
         oci_bind_by_name($stid, ":anlsis", $anlsis);
+        oci_bind_by_name($stid, ":nit_insttcion", $nit_insttcion);
 
         if (oci_execute($stid)) {
             oci_commit($this->conn);
