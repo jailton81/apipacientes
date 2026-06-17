@@ -4,6 +4,22 @@ class Database {
 
     public function __construct() {
         $this->loadEnv();
+        $this->enableCors();
+    }
+
+    private function enableCors() {
+        if (!headers_sent()) {
+            header("Access-Control-Allow-Origin: *");
+            header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+            header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+        }
+
+        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            if (!headers_sent()) {
+                header("HTTP/1.1 200 OK");
+            }
+            exit;
+        }
     }
 
     private function loadEnv() {
@@ -30,6 +46,7 @@ class Database {
 
         if (!$this->conexion) {
             if (!headers_sent()) {
+                http_response_code(500);
                 header("Content-Type: application/json; charset=UTF-8");
             }
             echo json_encode([

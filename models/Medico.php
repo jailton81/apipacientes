@@ -467,5 +467,60 @@ class Medico
             "data" => $medicos
         ];
     }
+
+    /**
+     * Recupera los datos necesarios para tokenizar asociados al médico e institución,
+     * retornando también el token generado en el login.
+     * 
+     * @param string $idntfccion_mdcos Identificación del médico
+     * @param string $token Token JWT generado en el login
+     * @return array
+     */
+    public function getDatosTokenizar($idntfccion_mdcos, $token)
+    {
+        $sql = 'SELECT 
+                    i.NIT_INSTTCION,   
+                    i.CLIENT_ID_RDA,   
+                    i.CLIENT_SECRET,   
+                    i.SCOPE,   
+                    i.SUBSCRIPTION_KEY  
+                FROM "INSTITUCION_MEDICO" im
+                JOIN "INSTTCIONES" i  ON im.ID_INSTITUCION = i.NIT_CNTBLDAD
+                JOIN "MDCOS" m         ON im.ID_MEDICO = m.ID_MDCO
+                WHERE m.IDNTFCCION_MDCOS = :idntfccion';
+
+        $stid = oci_parse($this->conn, $sql);
+        oci_bind_by_name($stid, ":idntfccion", $idntfccion_mdcos);
+
+        if (!oci_execute($stid)) {
+            $e = oci_error($stid);
+            return [
+                "status" => "error",
+                "message" => "Error extrayendo datos de tokenización: " . $e['message']
+            ];
+        }
+
+        $row = oci_fetch_array($stid, OCI_ASSOC + OCI_RETURN_NULLS);
+        oci_free_statement($stid);
+
+        if ($row) {
+            return [
+                "status" => "success",
+                "data" => [
+                    "nit_institucion" => $row['NIT_INSTTCION'],
+                    "client_id_rda" => $row['CLIENT_ID_RDA'],
+                    "client_secret" => $row['CLIENT_SECRET'],
+                    "scope" => $row['SCOPE'],
+                    "subscription_key" => $row['SUBSCRIPTION_KEY'],
+                    "token" => $token
+                ]
+            ];
+        }
+
+        return [
+            "status" => "error",
+            "message" => "No se encontraron instituciones asociadas al médico."
+        ];
+    }
 }
 ?>

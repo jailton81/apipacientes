@@ -22,7 +22,9 @@ class AllergyIntolerance
                     aa.ESTADO,
                     sa.DISPLAY AS ESTADO_CLINICO_DISPLAY,
                     aa.ESTADO_VERIFICACION,
-                    sb.DISPLAY AS VERIFICACION_DISPLAY
+                    sb.DISPLAY AS VERIFICACION_DISPLAY,
+                    aa.OBSERVACIONES,
+                    aa.CRITICIDAD
                 FROM "' . $this->table_name . '" aa
                 INNER JOIN "TIPOALERGIA" ta 
                     ON aa.TIPOALERGIA = ta.CODIGO
@@ -58,7 +60,9 @@ class AllergyIntolerance
                 "estado" => $row['ESTADO'],
                 "estado_clinico_display" => $row['ESTADO_CLINICO_DISPLAY'],
                 "estado_verificacion" => $row['ESTADO_VERIFICACION'],
-                "verificacion_display" => $row['VERIFICACION_DISPLAY']
+                "verificacion_display" => $row['VERIFICACION_DISPLAY'],
+                "observaciones" => $row['OBSERVACIONES'],
+                "criticidad" => $row['CRITICIDAD']
             ];
         }
         oci_free_statement($stid);
@@ -80,12 +84,12 @@ class AllergyIntolerance
     {
         $sql = 'INSERT INTO "' . $this->table_name . '" (
                     "ID", "ID_PCNTE", "FHIR_ID", "TIPOALERGIA", "CODIGO", 
-                    "DESCRIPCION", "ESTADO", "ESTADO_VERIFICACION", "OBSERVACIONES", 
+                    "DESCRIPCION", "ESTADO", "ESTADO_VERIFICACION", "CRITICIDAD", "OBSERVACIONES", 
                     "FECHA_INGRESO", "USUARIO_INGRESO"
                 ) VALUES (
                     (SELECT COALESCE(MAX("ID"), 0) + 1 FROM "' . $this->table_name . '"),
                     :id_pcnte, :fhir_id, :tipoalergia, :codigo, 
-                    :descripcion, :estado, :estado_verificacion, :observaciones, 
+                    :descripcion, :estado, :estado_verificacion, :criticidad, :observaciones, 
                     SYSDATE, :usuario_ingreso
                 )';
 
@@ -99,6 +103,7 @@ class AllergyIntolerance
         $descripcion = !empty($data->descripcion) ? $data->descripcion : null;
         $estado = !empty($data->estado) ? $data->estado : 'active';
         $estado_verificacion = !empty($data->estado_verificacion) ? $data->estado_verificacion : 'confirmed';
+        $criticidad = !empty($data->criticidad) ? $data->criticidad : 'high';
         $observaciones = !empty($data->observaciones) ? $data->observaciones : null;
         $usuario_ingreso = !empty($data->usuario_ingreso) ? $data->usuario_ingreso : 'API';
 
@@ -109,6 +114,7 @@ class AllergyIntolerance
         oci_bind_by_name($stid, ":descripcion", $descripcion);
         oci_bind_by_name($stid, ":estado", $estado);
         oci_bind_by_name($stid, ":estado_verificacion", $estado_verificacion);
+        oci_bind_by_name($stid, ":criticidad", $criticidad);
         oci_bind_by_name($stid, ":observaciones", $observaciones);
         oci_bind_by_name($stid, ":usuario_ingreso", $usuario_ingreso);
 
@@ -160,6 +166,10 @@ class AllergyIntolerance
         if (isset($data->estado_verificacion)) {
             $fields_to_update[] = '"ESTADO_VERIFICACION" = :estado_verificacion';
             $params[":estado_verificacion"] = $data->estado_verificacion;
+        }
+        if (isset($data->criticidad)) {
+            $fields_to_update[] = '"CRITICIDAD" = :criticidad';
+            $params[":criticidad"] = $data->criticidad;
         }
         if (isset($data->observaciones)) {
             $fields_to_update[] = '"OBSERVACIONES" = :observaciones';
