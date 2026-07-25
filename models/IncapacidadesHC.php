@@ -24,7 +24,11 @@ class IncapacidadesHC
                     TO_CHAR(i.FCHA_FNAL, \'YYYY-MM-DD HH24:MI:SS\') AS FCHA_FNAL,   
                     i.DGNSTCO,   
                     i.DRCION,   
-                    i.GRPO_SRVCIO  
+                    i.GRPO_SRVCIO,
+                    i.ES_PRORROGA,
+                    i.TIPO_CONTINGENCIA,
+                    i.MODALIDAD,
+                    i.ORIGEN_INCAPACIDAD  
                 FROM "RMSION_INCPCDAD" i  
                 WHERE i.ID_PCNTE = :id 
                   AND i.CNSCTVO_PCNTE = :cons';
@@ -56,7 +60,11 @@ class IncapacidadesHC
                 "fcha_fnal" => $row['FCHA_FNAL'],
                 "dgnstco" => $row['DGNSTCO'],
                 "drcion" => $row['DRCION'],
-                "grpo_srvcio" => $row['GRPO_SRVCIO']
+                "grpo_srvcio" => $row['GRPO_SRVCIO'],
+                "es_prorroga" => $row['ES_PRORROGA'],
+                "tipo_contingencia" => $row['TIPO_CONTINGENCIA'],
+                "modalidad" => $row['MODALIDAD'],
+                "origen_incapacidad" => $row['ORIGEN_INCAPACIDAD']
             ];
         }
         oci_free_statement($stid);
@@ -101,12 +109,14 @@ class IncapacidadesHC
         $sql = 'INSERT INTO "RMSION_INCPCDAD" (
                     "ID_PCNTE", "TPO_ID", "CNSCTVO_PCNTE", "NIT_EMPRSA", "ID_MDCO",
                     "DSCRPCION_INCPCDAD", "FCHA_RMSION", "CDGO_EXMEN", "FCHA_INCIO",
-                    "FCHA_FNAL", "DGNSTCO", "DRCION", "GRPO_SRVCIO"
+                    "FCHA_FNAL", "DGNSTCO", "DRCION", "GRPO_SRVCIO", "ES_PRORROGA",
+                    "TIPO_CONTINGENCIA", "MODALIDAD", "ORIGEN_INCAPACIDAD"
                 ) VALUES (
                     :id_pcnte, :tpo_id, :cnsctvo_pcnte, :nit_emprsa, :id_mdco,
                     :dscrpcion_incpcdad, SYSDATE, :cdgo_exmen, 
                     TO_DATE(:fcha_incio, \'YYYY-MM-DD\'), TO_DATE(:fcha_fnal, \'YYYY-MM-DD\'), 
-                    :dgnstco, :drcion, :grpo_srvcio
+                    :dgnstco, :drcion, :grpo_srvcio, :es_prorroga,
+                    :tipo_contingencia, :modalidad, :origen_incapacidad
                 )';
 
         $stid = oci_parse($this->conn, $sql);
@@ -120,6 +130,10 @@ class IncapacidadesHC
         $dgnstco = !empty($data->dgnstco) ? $data->dgnstco : null;
         $drcion = isset($data->drcion) ? $data->drcion : null;
         $grpo_srvcio = !empty($data->grpo_srvcio) ? $data->grpo_srvcio : null;
+        $es_prorroga = isset($data->es_prorroga) ? $data->es_prorroga : null;
+        $tipo_contingencia = !empty($data->tipo_contingencia) ? $data->tipo_contingencia : null;
+        $modalidad = !empty($data->modalidad) ? $data->modalidad : null;
+        $origen_incapacidad = !empty($data->origen_incapacidad) ? $data->origen_incapacidad : null;
 
         oci_bind_by_name($stid, ":id_pcnte", $id_pcnte);
         oci_bind_by_name($stid, ":tpo_id", $tpo_id);
@@ -133,6 +147,10 @@ class IncapacidadesHC
         oci_bind_by_name($stid, ":dgnstco", $dgnstco);
         oci_bind_by_name($stid, ":drcion", $drcion);
         oci_bind_by_name($stid, ":grpo_srvcio", $grpo_srvcio);
+        oci_bind_by_name($stid, ":es_prorroga", $es_prorroga);
+        oci_bind_by_name($stid, ":tipo_contingencia", $tipo_contingencia);
+        oci_bind_by_name($stid, ":modalidad", $modalidad);
+        oci_bind_by_name($stid, ":origen_incapacidad", $origen_incapacidad);
 
         if (oci_execute($stid)) {
             oci_commit($this->conn);
@@ -199,6 +217,22 @@ class IncapacidadesHC
         if (isset($data->grpo_srvcio)) {
             $fields_to_update[] = '"GRPO_SRVCIO" = :grpo_srvcio';
             $params[":grpo_srvcio"] = $data->grpo_srvcio;
+        }
+        if (isset($data->es_prorroga)) {
+            $fields_to_update[] = '"ES_PRORROGA" = :es_prorroga';
+            $params[":es_prorroga"] = $data->es_prorroga;
+        }
+        if (isset($data->tipo_contingencia)) {
+            $fields_to_update[] = '"TIPO_CONTINGENCIA" = :tipo_contingencia';
+            $params[":tipo_contingencia"] = $data->tipo_contingencia;
+        }
+        if (isset($data->modalidad)) {
+            $fields_to_update[] = '"MODALIDAD" = :modalidad';
+            $params[":modalidad"] = $data->modalidad;
+        }
+        if (isset($data->origen_incapacidad)) {
+            $fields_to_update[] = '"ORIGEN_INCAPACIDAD" = :origen_incapacidad';
+            $params[":origen_incapacidad"] = $data->origen_incapacidad;
         }
 
         if (empty($fields_to_update)) {

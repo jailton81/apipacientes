@@ -28,7 +28,16 @@ class Formulacion
                     f.VIA,
                     f.FRECUENCIA,
                     f.DURACION,
-                    f.FORMA
+                    f.FORMA,
+                    f.TIPO_TECNOLOGIA,
+                    f.UM_DOSIS,
+                    f.UM_DOSIS_DESCRIPCION,
+                    f.UM_FRECUENCIA,
+                    f.UM_FRECUENCIA_DESCRIPCION,
+                    f.UM_DURACION,
+                    f.UM_DURACION_DECRIPCION,
+                    f.CODIGO_VIA,
+                    f.CODIGO_TIPO_TECNOLOGIA
                 FROM "FORMULACION" f
                 WHERE f.ID_PCNTE = :as_pcnte 
                   AND f.NMRO_EVLCION = :as_evlcion';
@@ -64,7 +73,16 @@ class Formulacion
                 "via" => $row['VIA'],
                 "frecuencia" => $row['FRECUENCIA'],
                 "duracion" => $row['DURACION'],
-                "forma" => $row['FORMA']
+                "forma" => $row['FORMA'],
+                "tipo_tecnologia" => $row['TIPO_TECNOLOGIA'],
+                "um_dosis" => $row['UM_DOSIS'],
+                "um_dosis_descripcion" => $row['UM_DOSIS_DESCRIPCION'],
+                "um_frecuencia" => $row['UM_FRECUENCIA'],
+                "um_frecuencia_descripcion" => $row['UM_FRECUENCIA_DESCRIPCION'],
+                "um_duracion" => $row['UM_DURACION'],
+                "um_duracion_decripcion" => $row['UM_DURACION_DECRIPCION'],
+                "codigo_via" => $row['CODIGO_VIA'],
+                "codigo_tipo_tecnologia" => $row['CODIGO_TIPO_TECNOLOGIA']
             ];
         }
         oci_free_statement($stid);
@@ -122,11 +140,15 @@ class Formulacion
         $sql = 'INSERT INTO "FORMULACION" (
                     "ID_PCNTE", "TPO_ID", "NMRO_EVLCION", "CNSCTVO", "CDGO_DRGA", "CNTDAD",
                     "PLAN", "ID_MDCO", "DSCRPCION", "PSLGIA", "FRMLA", "FCHA_FRMLA",
-                    "DOSIS", "VIA", "FRECUENCIA", "DURACION", "FORMA"
+                    "DOSIS", "VIA", "FRECUENCIA", "DURACION", "FORMA",
+                    "TIPO_TECNOLOGIA", "UM_DOSIS", "UM_DOSIS_DESCRIPCION", "UM_FRECUENCIA", "UM_FRECUENCIA_DESCRIPCION",
+                    "UM_DURACION", "UM_DURACION_DECRIPCION", "CODIGO_VIA", "CODIGO_TIPO_TECNOLOGIA"
                 ) VALUES (
                     :id_pcnte, :tpo_id, :nmro_evlcion, :cnsctvo, :cdgo_drga, :cntdad,
                     :plan, :id_mdco, :dscrpcion, :pslgia, :frmla, SYSDATE,
-                    :dosis, :via, :frecuencia, :duracion, :forma
+                    :dosis, :via, :frecuencia, :duracion, :forma,
+                    :tipo_tecnologia, :um_dosis, :um_dosis_descripcion, :um_frecuencia, :um_frecuencia_descripcion,
+                    :um_duracion, :um_duracion_decripcion, :codigo_via, :codigo_tipo_tecnologia
                 )';
 
         $stid = oci_parse($this->conn, $sql);
@@ -143,6 +165,15 @@ class Formulacion
         $frecuencia = !empty($data->frecuencia) ? $data->frecuencia : null;
         $duracion = !empty($data->duracion) ? $data->duracion : null;
         $forma = !empty($data->forma) ? $data->forma : null;
+        $tipo_tecnologia = !empty($data->tipo_tecnologia) ? $data->tipo_tecnologia : null;
+        $um_dosis = !empty($data->um_dosis) ? $data->um_dosis : null;
+        $um_dosis_descripcion = !empty($data->um_dosis_descripcion) ? $data->um_dosis_descripcion : null;
+        $um_frecuencia = !empty($data->um_frecuencia) ? $data->um_frecuencia : null;
+        $um_frecuencia_descripcion = !empty($data->um_frecuencia_descripcion) ? $data->um_frecuencia_descripcion : null;
+        $um_duracion = !empty($data->um_duracion) ? $data->um_duracion : null;
+        $um_duracion_decripcion = !empty($data->um_duracion_decripcion) ? $data->um_duracion_decripcion : null;
+        $codigo_via = !empty($data->codigo_via) ? $data->codigo_via : null;
+        $codigo_tipo_tecnologia = !empty($data->codigo_tipo_tecnologia) ? $data->codigo_tipo_tecnologia : null;
 
         oci_bind_by_name($stid, ":id_pcnte", $id_pcnte);
         oci_bind_by_name($stid, ":tpo_id", $tpo_id);
@@ -160,6 +191,15 @@ class Formulacion
         oci_bind_by_name($stid, ":frecuencia", $frecuencia);
         oci_bind_by_name($stid, ":duracion", $duracion);
         oci_bind_by_name($stid, ":forma", $forma);
+        oci_bind_by_name($stid, ":tipo_tecnologia", $tipo_tecnologia);
+        oci_bind_by_name($stid, ":um_dosis", $um_dosis);
+        oci_bind_by_name($stid, ":um_dosis_descripcion", $um_dosis_descripcion);
+        oci_bind_by_name($stid, ":um_frecuencia", $um_frecuencia);
+        oci_bind_by_name($stid, ":um_frecuencia_descripcion", $um_frecuencia_descripcion);
+        oci_bind_by_name($stid, ":um_duracion", $um_duracion);
+        oci_bind_by_name($stid, ":um_duracion_decripcion", $um_duracion_decripcion);
+        oci_bind_by_name($stid, ":codigo_via", $codigo_via);
+        oci_bind_by_name($stid, ":codigo_tipo_tecnologia", $codigo_tipo_tecnologia);
 
         if (oci_execute($stid)) {
             oci_commit($this->conn);
@@ -240,6 +280,42 @@ class Formulacion
         if (isset($data->forma)) {
             $fields_to_update[] = '"FORMA" = :forma';
             $params[":forma"] = $data->forma;
+        }
+        if (isset($data->tipo_tecnologia)) {
+            $fields_to_update[] = '"TIPO_TECNOLOGIA" = :tipo_tecnologia';
+            $params[":tipo_tecnologia"] = $data->tipo_tecnologia;
+        }
+        if (isset($data->um_dosis)) {
+            $fields_to_update[] = '"UM_DOSIS" = :um_dosis';
+            $params[":um_dosis"] = $data->um_dosis;
+        }
+        if (isset($data->um_dosis_descripcion)) {
+            $fields_to_update[] = '"UM_DOSIS_DESCRIPCION" = :um_dosis_descripcion';
+            $params[":um_dosis_descripcion"] = $data->um_dosis_descripcion;
+        }
+        if (isset($data->um_frecuencia)) {
+            $fields_to_update[] = '"UM_FRECUENCIA" = :um_frecuencia';
+            $params[":um_frecuencia"] = $data->um_frecuencia;
+        }
+        if (isset($data->um_frecuencia_descripcion)) {
+            $fields_to_update[] = '"UM_FRECUENCIA_DESCRIPCION" = :um_frecuencia_descripcion';
+            $params[":um_frecuencia_descripcion"] = $data->um_frecuencia_descripcion;
+        }
+        if (isset($data->um_duracion)) {
+            $fields_to_update[] = '"UM_DURACION" = :um_duracion';
+            $params[":um_duracion"] = $data->um_duracion;
+        }
+        if (isset($data->um_duracion_decripcion)) {
+            $fields_to_update[] = '"UM_DURACION_DECRIPCION" = :um_duracion_decripcion';
+            $params[":um_duracion_decripcion"] = $data->um_duracion_decripcion;
+        }
+        if (isset($data->codigo_via)) {
+            $fields_to_update[] = '"CODIGO_VIA" = :codigo_via';
+            $params[":codigo_via"] = $data->codigo_via;
+        }
+        if (isset($data->codigo_tipo_tecnologia)) {
+            $fields_to_update[] = '"CODIGO_TIPO_TECNOLOGIA" = :codigo_tipo_tecnologia';
+            $params[":codigo_tipo_tecnologia"] = $data->codigo_tipo_tecnologia;
         }
 
         if (empty($fields_to_update)) {
